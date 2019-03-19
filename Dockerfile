@@ -1,11 +1,13 @@
-FROM php:7.2-apache
+FROM php:7.3-apache
 MAINTAINER Webgriffe Srl <support@webgriffe.com>
 
+
 # Install GD
-RUN apt-get update \
+RUN apt-get update && apt-get install -y apt-utils \
     && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libpng-dev \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install gd \
+	&& apt-get autoremove -y \
 	&& apt-get clean
 
 # Install Intl
@@ -51,7 +53,9 @@ RUN apt-get update \
 RUN docker-php-ext-install opcache
 
 # Install PHP zip extension
-RUN docker-php-ext-install zip
+RUN apt-get install -y libzip-dev \
+	&& docker-php-ext-configure zip --with-libzip \
+	&& docker-php-ext-install zip
 
 # Install Git
 RUN apt-get update \
@@ -72,6 +76,9 @@ ENV APACHE_DOC_ROOT /var/www/html
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
+
+# Enable debug config
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 # Additional PHP ini configuration
 COPY ./999-php.ini /usr/local/etc/php/conf.d/
